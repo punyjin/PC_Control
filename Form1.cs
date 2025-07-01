@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -163,6 +164,49 @@ namespace NS
             else
             {
                 base.OnFormClosing(e);
+            }
+        }
+
+        private async void btn_network_Click(object sender, EventArgs e)
+        {
+            string downloadUrl = "https://1111-releases.cloudflareclient.com/win/latest";
+            string filePath = Path.Combine(Path.GetTempPath(), "Cloudflare_WARP_latest.msi"); // ตั้งชื่อไฟล์ตายตัว
+
+            try
+            {
+                btn_network.Enabled = false;
+                btn_network.Text = "กำลังดาวน์โหลด...";
+
+                using (WebClient client = new WebClient())
+                {
+                    await client.DownloadFileTaskAsync(new Uri(downloadUrl), filePath);
+                }
+
+                btn_network.Text = "กำลังติดตั้ง...";
+
+                // เรียกติดตั้งไฟล์ MSI แบบขอสิทธิ์ Admin
+                ProcessStartInfo psi = new ProcessStartInfo()
+                {
+                    FileName = "msiexec",
+                    Arguments = $"/i \"{filePath}\" /quiet /norestart",
+                    UseShellExecute = true,
+                    Verb = "runas" // ขอสิทธิ์ Administrator
+                };
+
+                Process installProcess = Process.Start(psi);
+                installProcess.WaitForExit(); // รอจนติดตั้งเสร็จ
+
+                MessageBox.Show("ติดตั้ง WARP เสร็จเรียบร้อยแล้ว", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                btn_network.Text = "ติดตั้ง WARP";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"เกิดข้อผิดพลาด:\n{ex.Message}", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btn_network.Text = "ติดตั้ง WARP";
+            }
+            finally
+            {
+                btn_network.Enabled = true;
             }
         }
     }

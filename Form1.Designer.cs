@@ -35,6 +35,7 @@
             this.lbl_status = new System.Windows.Forms.Label();
             this.trayIcon = new System.Windows.Forms.NotifyIcon(this.components);
             this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.btn_network = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btn_start
@@ -82,15 +83,28 @@
             this.trayMenu.Name = "trayMenu";
             this.trayMenu.Size = new System.Drawing.Size(61, 4);
             // 
+            // btn_network
+            // 
+            this.btn_network.Location = new System.Drawing.Point(59, 134);
+            this.btn_network.Name = "btn_network";
+            this.btn_network.Size = new System.Drawing.Size(102, 39);
+            this.btn_network.TabIndex = 4;
+            this.btn_network.Text = "Network Speed";
+            this.btn_network.UseVisualStyleBackColor = true;
+            this.btn_network.Click += new System.EventHandler(this.btn_network_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(213, 143);
+            this.ClientSize = new System.Drawing.Size(213, 185);
+            this.Controls.Add(this.btn_network);
             this.Controls.Add(this.lbl_status);
             this.Controls.Add(this.btn_stop);
             this.Controls.Add(this.btn_start);
             this.MaximizeBox = false;
+            this.MaximumSize = new System.Drawing.Size(229, 224);
+            this.MinimumSize = new System.Drawing.Size(229, 224);
             this.Name = "Form1";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
@@ -110,6 +124,7 @@
         private System.Windows.Forms.Label lbl_status;
         private System.Windows.Forms.NotifyIcon trayIcon;
         private System.Windows.Forms.ContextMenuStrip trayMenu;
+        private System.Windows.Forms.Button btn_network;
     }
 }
 
