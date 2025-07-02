@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -166,17 +167,62 @@ namespace NS
                 base.OnFormClosing(e);
             }
         }
-
-        private async void btn_network_Click(object sender, EventArgs e)
+        private readonly string downloadUrl = "https://1111-releases.cloudflareclient.com/win/latest";
+        private readonly string filePath = Path.Combine(Path.GetTempPath(), "Cloudflare_WARP_latest.msi");
+        private const string RegistryPath = @"Software\MyApp\WARP";
+        private const string RegistryValueName = "IsWARPInstalled";
+        // Check installation status on form load
+        private void InitializeNetworkButton()
         {
-            string downloadUrl = "https://1111-releases.cloudflareclient.com/win/latest";
-            string filePath = Path.Combine(Path.GetTempPath(), "Cloudflare_WARP_latest.msi"); // ตั้งชื่อไฟล์ตายตัว
-
-            try
+            if (IsWARPInstalled())
             {
                 btn_network.Enabled = false;
-                btn_network.Text = "กำลังดาวน์โหลด...";
+                btn_network.Text = "WARP ติดตั้งแล้ว";
+            }
+            else
+            {
+                btn_network.Enabled = true;
+                btn_network.Text = "ติดตั้ง WARP";
+            }
+        }
 
+        // Check if WARP is installed in registry
+        private bool IsWARPInstalled()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(RegistryPath))
+                {
+                    return key?.GetValue(RegistryValueName) is bool isInstalled && isInstalled;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // Save installation status to registry
+        private void SaveInstallationStatus()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.CreateSubKey(RegistryPath))
+                {
+                    key.SetValue(RegistryValueName, true, RegistryValueKind.DWord);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"ไม่สามารถบันทึกสถานะการติดตั้ง: {ex.Message}", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Download and install WARP
+        private async Task DownloadAndInstallWARP()
+        {
+            try
+            {
                 using (WebClient client = new WebClient())
                 {
                     await client.DownloadFileTaskAsync(new Uri(downloadUrl), filePath);
@@ -184,28 +230,48 @@ namespace NS
 
                 btn_network.Text = "กำลังติดตั้ง...";
 
-                // เรียกติดตั้งไฟล์ MSI แบบขอสิทธิ์ Admin
-                ProcessStartInfo psi = new ProcessStartInfo()
+                ProcessStartInfo psi = new ProcessStartInfo
                 {
                     FileName = "msiexec",
                     Arguments = $"/i \"{filePath}\" /quiet /norestart",
                     UseShellExecute = true,
-                    Verb = "runas" // ขอสิทธิ์ Administrator
+                    Verb = "runas"
                 };
 
-                Process installProcess = Process.Start(psi);
-                installProcess.WaitForExit(); // รอจนติดตั้งเสร็จ
+                using (Process installProcess = Process.Start(psi))
+                {
+                    await Task.Run(() => installProcess.WaitForExit());
+                }
+            }
+            catch
+            {
+                throw; // Let the caller handle the exception
+            }
+        }
 
-                MessageBox.Show("ติดตั้ง WARP เสร็จเรียบร้อยแล้ว", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                btn_network.Text = "ติดตั้ง WARP";
+        private async void btn_network_Click(object sender, EventArgs e)
+        {
+            if (IsWARPInstalled())
+            {
+                btn_network.Enabled = false;
+                btn_network.Text = "WARP ติดตั้งแล้ว";
+                return;
+            }
+
+            btn_network.Enabled = false;
+            btn_network.Text = "กำลังดาวน์โหลด...";
+
+            try
+            {
+                await DownloadAndInstallWARP();
+                SaveInstallationStatus();
+                MessageBox.Show("ติดตั้ง WARP เสร็จเรียบร้อยแล้ว โปรดตรวจสอบรูปก้อนเมฆขวาล่าง", "สำเร็จ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                btn_network.Text = "WARP ติดตั้งแล้ว";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"เกิดข้อผิดพลาด:\n{ex.Message}", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"เกิดข้อผิดพลาด: {ex.Message}", "ข้อผิดพลาด", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 btn_network.Text = "ติดตั้ง WARP";
-            }
-            finally
-            {
                 btn_network.Enabled = true;
             }
         }
