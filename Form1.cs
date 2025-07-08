@@ -326,8 +326,77 @@ namespace NS
                 }
             }
 
-            // หากทุกคำสั่งรันสำเร็จ
-            MessageBox.Show("Commands executed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // เพิ่มขั้นตอนตรวจสอบสถานะการเชื่อมต่อ
+            try
+            {
+                // ใช้คำสั่ง ipconfig เพื่อตรวจสอบสถานะ IP ก่อนที่จะรีเซ็ต
+                string checkConnectionCommand = "ipconfig";
+                ProcessStartInfo checkConnectionStartInfo = new ProcessStartInfo("cmd.exe")
+                {
+                    Arguments = "/C " + checkConnectionCommand,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using (Process checkConnectionProcess = Process.Start(checkConnectionStartInfo))
+                {
+                    string output = checkConnectionProcess.StandardOutput.ReadToEnd();
+                    string error = checkConnectionProcess.StandardError.ReadToEnd();
+
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        MessageBox.Show("Error while checking IP config: " + error, "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // ตรวจสอบว่ามีการเชื่อมต่อหรือไม่
+                    if (output.Contains("Ethernet adapter") || output.Contains("Wireless LAN adapter"))
+                    {
+                        MessageBox.Show("Network adapter found, proceeding with reset.", "Network Check", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show("No active network connection found.", "Network Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred while checking network connection: " + ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+
+
+            // ตรวจสอบโฟลเดอร์ Roblox หลังจากคำสั่งทั้งหมดรันเสร็จ
+            try
+            {
+                // ตรวจสอบเส้นทางโฟลเดอร์
+                string userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); // C:\Users\{User}
+                string robloxFolder = Path.Combine(userFolder, "AppData\\Local\\Roblox");
+
+                // ตรวจสอบว่าโฟลเดอร์มีอยู่หรือไม่
+                if (Directory.Exists(robloxFolder))
+                {
+                    // ลบโฟลเดอร์ Roblox และข้อมูลภายในทั้งหมด
+                    Directory.Delete(robloxFolder, true); // true = ลบไฟล์ทั้งหมดในโฟลเดอร์ด้วย
+                    MessageBox.Show("Roblox folder and its contents have been deleted.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    //MessageBox.Show("No Roblox folder found.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                // หากเกิดข้อผิดพลาดในการลบโฟลเดอร์
+                MessageBox.Show("An error occurred while trying to delete the Roblox folder: " + ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            // แจ้งผลหลังจากทุกคำสั่งสำเร็จ
+            MessageBox.Show("All commands executed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }
