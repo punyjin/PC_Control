@@ -36,6 +36,7 @@
             this.trayIcon = new System.Windows.Forms.NotifyIcon(this.components);
             this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.btn_network = new System.Windows.Forms.Button();
+            this.btn_roblox = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btn_start
@@ -85,19 +86,30 @@
             // 
             // btn_network
             // 
-            this.btn_network.Location = new System.Drawing.Point(59, 134);
+            this.btn_network.Location = new System.Drawing.Point(12, 134);
             this.btn_network.Name = "btn_network";
-            this.btn_network.Size = new System.Drawing.Size(102, 39);
+            this.btn_network.Size = new System.Drawing.Size(89, 39);
             this.btn_network.TabIndex = 4;
             this.btn_network.Text = "Network Speed";
             this.btn_network.UseVisualStyleBackColor = true;
             this.btn_network.Click += new System.EventHandler(this.btn_network_Click);
+            // 
+            // btn_roblox
+            // 
+            this.btn_roblox.Location = new System.Drawing.Point(107, 134);
+            this.btn_roblox.Name = "btn_roblox";
+            this.btn_roblox.Size = new System.Drawing.Size(89, 39);
+            this.btn_roblox.TabIndex = 5;
+            this.btn_roblox.Text = "Roblox Install";
+            this.btn_roblox.UseVisualStyleBackColor = true;
+            this.btn_roblox.Click += new System.EventHandler(this.btn_roblox_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(213, 185);
+            this.Controls.Add(this.btn_roblox);
             this.Controls.Add(this.btn_network);
             this.Controls.Add(this.lbl_status);
             this.Controls.Add(this.btn_stop);
@@ -125,6 +137,7 @@
         private System.Windows.Forms.NotifyIcon trayIcon;
         private System.Windows.Forms.ContextMenuStrip trayMenu;
         private System.Windows.Forms.Button btn_network;
+        private System.Windows.Forms.Button btn_roblox;
     }
 }
 

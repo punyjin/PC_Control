@@ -275,5 +275,59 @@ namespace NS
                 btn_network.Enabled = true;
             }
         }
+
+        private void btn_roblox_Click(object sender, EventArgs e)
+        {
+            // สร้างคำสั่งที่ต้องการรัน
+            string[] commands = new string[]
+            {
+                "netsh int ip reset",
+                "netsh winsock reset",
+                "ipconfig /release",
+                "ipconfig /renew",
+                "ipconfig /flushdns"
+            };
+
+            // วนรันคำสั่งแต่ละอัน
+            foreach (var command in commands)
+            {
+                try
+                {
+                    // สร้าง ProcessStartInfo
+                    ProcessStartInfo processStartInfo = new ProcessStartInfo("cmd.exe")
+                    {
+                        Arguments = "/C " + command, // /C ใช้ให้ cmd รันคำสั่งแล้วปิดเอง
+                        CreateNoWindow = true, // ปิดหน้าต่าง cmd
+                        UseShellExecute = false, // ไม่ใช้ shell เพื่อให้การรันเร็วขึ้น
+                        RedirectStandardOutput = true, // อ่านผลลัพธ์จากคำสั่ง
+                        RedirectStandardError = true // อ่านข้อผิดพลาดจากคำสั่ง
+                    };
+
+                    using (Process process = Process.Start(processStartInfo))
+                    {
+                        // อ่านผลลัพธ์จากคำสั่ง
+                        string output = process.StandardOutput.ReadToEnd();
+                        string error = process.StandardError.ReadToEnd();
+
+                        // ตรวจสอบข้อผิดพลาด
+                        if (!string.IsNullOrEmpty(error))
+                        {
+                            // แสดงข้อผิดพลาด
+                            MessageBox.Show("Error: " + error, "Command Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // หากเกิดข้อผิดพลาดในการรันคำสั่ง
+                    MessageBox.Show("An error occurred: " + ex.Message, "Exception", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+
+            // หากทุกคำสั่งรันสำเร็จ
+            MessageBox.Show("Commands executed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
 }
