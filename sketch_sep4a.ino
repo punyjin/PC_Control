@@ -1,6 +1,6 @@
 #define BLYNK_TEMPLATE_ID "TMPL6CjK7BLjh"
 #define BLYNK_TEMPLATE_NAME "FANCONTROLLED"
-#define BLYNK_AUTH_TOKEN  "YOUR_DEVICE_AUTH_TOKEN"
+#define BLYNK_AUTH_TOKEN  "btnB_MKx5eEheXvW96IvTnxxWhGWr6Cf"
 
 #include <WiFi.h>
 #include <WiFiClient.h>
