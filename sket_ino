@@ -35,6 +35,9 @@ const char* KEY_TMPLID  = "tmpl_id";
 const char* KEY_TMPLNM  = "tmpl_name";
 const char* KEY_DEVNAME = "dev_name";
 
+// Inside
+const char* KEY_LAST_MODE = "last_mode";
+
 // --- captive portal and webserver ---
 WebServer server(80);
 DNSServer dnsServer;
@@ -50,6 +53,7 @@ String savedSSID = "", savedPASS = "", savedBlynkToken = "";
 String savedTmplID = "", savedTmplName = "", savedDevName = "";
 bool mainSwitch = false;
 int currentMode = 0;
+int lastSelectedMode = 1; //จดจำเบอร์ล่้าสุด
 
 BlynkTimer timer;
 bool blynkConnected = false;
@@ -284,6 +288,9 @@ void saveConfigAndRestart(const String& ssid, const String& pass, const String& 
   prefs.putString(KEY_BLYNK, blynk);
   prefs.putString(KEY_TMPLID, tmplid);
   prefs.putString(KEY_TMPLNM, tmplname);
+  
+  // โหลด lastSelectedMode
+  lastSelectedMode = prefs.getInt(KEY_LAST_MODE, 1);  // ค่าเริ่มต้น 1
   prefs.end();
 
   debugLog("Saved new config. Rebooting...");
@@ -533,42 +540,59 @@ BLYNK_CONNECTED() {
 
 BLYNK_WRITE(VPIN_MAIN_SWITCH) {
   int v = param.asInt();
-  mainSwitch = (v != 0);
+  bool newSwitch = (v != 0);
 
-  // ถ้าปิด บังคับ mode เป็น 0
-  if (!mainSwitch) {
-    currentMode = 0;
-    Blynk.virtualWrite(VPIN_MODE_SELECT, 0);
-  } else if (currentMode == 0) {
-    // ถ้าเปิด แต่ mode ยังเป็น 0 ตั้งเป็น 1
-    currentMode = 1;
-    Blynk.virtualWrite(VPIN_MODE_SELECT, 1);
+  if (newSwitch != mainSwitch) {
+    mainSwitch = newSwitch;
+
+    if (!mainSwitch) {
+      currentMode = 0;
+      Blynk.virtualWrite(VPIN_MODE_SELECT, 0);
+      debugLog("ปิดพัดลม (mainSwitch = OFF)");
+    } else {
+      currentMode = lastSelectedMode;
+      Blynk.virtualWrite(VPIN_MODE_SELECT, currentMode);
+      debugLog("เปิดพัดลม → โหมด " + String(currentMode));
+    }
+    setRelays(currentMode);
   }
-
-  setRelays(currentMode);
-  debugLog("Main Switch: " + String(mainSwitch ? "ON" : "OFF"));
 }
 
 BLYNK_WRITE(VPIN_MODE_SELECT) {
   int requestedMode = param.asInt();
 
   if (!mainSwitch) {
-    // ถ้า mainSwitch ปิด บังคับส่ง mode 0 กลับ
-    Blynk.virtualWrite(VPIN_MODE_SELECT, 0);
-    currentMode = 0;
-    setRelays(0);
-    debugLog("Main Switch ปิดอยู่ → บังคับ Mode = 0");
+    if (currentMode != 0) {
+      currentMode = 0;
+      Blynk.virtualWrite(VPIN_MODE_SELECT, 0);
+      setRelays(0);
+      debugLog("ปิดพัดลม (mainSwitch = OFF)");
+    }
     return;
   }
 
-  // อนุญาตเฉพาะ 1,2,3
-  if (requestedMode >= 1 && requestedMode <= 3) {
-    currentMode = requestedMode;
-  } else {
-    currentMode = 1; // fallback
+  if (requestedMode < 1 || requestedMode > 3) {
+    requestedMode = 1;
     Blynk.virtualWrite(VPIN_MODE_SELECT, 1);
   }
 
-  setRelays(currentMode);
-  debugLog("Mode ตั้งเป็น: " + String(currentMode));
+  static int previousMode = -1;
+
+  if (requestedMode != currentMode) {
+    currentMode = requestedMode;
+    lastSelectedMode = requestedMode;
+
+    static int savedLastMode = -1;
+    if (lastSelectedMode != savedLastMode) {
+      prefs.begin(PREF_NS, false);
+      prefs.putInt(KEY_LAST_MODE, lastSelectedMode);
+      prefs.end();
+      savedLastMode = lastSelectedMode;
+    }
+
+    setRelays(currentMode);
+    debugLog("เปลี่ยนโหมด → " + String(currentMode));
+  }
+
+  previousMode = currentMode;
 }
