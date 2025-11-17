@@ -244,12 +244,15 @@ const char CONFIG_PAGE[] PROGMEM = R"rawliteral(
 
 // ----------------- helper functions -----------------
 void setRelays(int mode) {
+  if (!mainSwitch || mode == 0) {
+    digitalWrite(RELAY1, RELAY_OFF);
+    digitalWrite(RELAY2, RELAY_OFF);
+    digitalWrite(RELAY3, RELAY_OFF);
+    debugLog("Switch หลักปิดหรือ mode=0 → ปิดการใช้งานทั้งหมด");
+    return;
+  }
+
   switch (mode) {
-    case 0:
-      digitalWrite(RELAY1, RELAY_OFF);
-      digitalWrite(RELAY2, RELAY_OFF);
-      digitalWrite(RELAY3, RELAY_OFF);
-      break;
     case 1:
       digitalWrite(RELAY1, RELAY_ON);
       digitalWrite(RELAY2, RELAY_OFF);
@@ -266,9 +269,11 @@ void setRelays(int mode) {
       digitalWrite(RELAY3, RELAY_ON);
       break;
     default:
+      // ถ้า mode > 3 หรือผิดพลาด → ปิด
       digitalWrite(RELAY1, RELAY_OFF);
       digitalWrite(RELAY2, RELAY_OFF);
       digitalWrite(RELAY3, RELAY_OFF);
+      break;
   }
 }
 
@@ -462,7 +467,7 @@ void setup() {
       }
       if (Blynk.connected()) {
         blynkConnected = true;
-        debugLog("Blynk connected.");
+        debugLog("Blynk connected. Function Setup");
       } else {
         debugLog("Blynk connect failed (will retry in background).");
       }
@@ -512,25 +517,58 @@ void loop() {
 }
 
 // --- Blynk handlers ---
+// BLYNK_CONNECTED() {
+//   debugLog("Blynk connected (callback).");
+//   Blynk.syncAll();
+// }
+
 BLYNK_CONNECTED() {
-  debugLog("Blynk connected (callback).");
-  Blynk.syncAll();
+  debugLog("Blynk connected. Syncing state...");
+  Blynk.syncVirtual(VPIN_MAIN_SWITCH, VPIN_MODE_SELECT);
+
+  // ส่งสถานะปัจจุบันทันที
+  Blynk.virtualWrite(VPIN_MAIN_SWITCH, mainSwitch);
+  Blynk.virtualWrite(VPIN_MODE_SELECT, mainSwitch ? currentMode : 0);
 }
 
 BLYNK_WRITE(VPIN_MAIN_SWITCH) {
   int v = param.asInt();
   mainSwitch = (v != 0);
-  currentMode = mainSwitch ? 1 : 0;
+
+  // ถ้าปิด บังคับ mode เป็น 0
+  if (!mainSwitch) {
+    currentMode = 0;
+    Blynk.virtualWrite(VPIN_MODE_SELECT, 0);
+  } else if (currentMode == 0) {
+    // ถ้าเปิด แต่ mode ยังเป็น 0 ตั้งเป็น 1
+    currentMode = 1;
+    Blynk.virtualWrite(VPIN_MODE_SELECT, 1);
+  }
+
   setRelays(currentMode);
+  debugLog("Main Switch: " + String(mainSwitch ? "ON" : "OFF"));
 }
 
 BLYNK_WRITE(VPIN_MODE_SELECT) {
-  currentMode = param.asInt();
-  debugLog("Mode Selected => " + String(currentMode));
-  if (currentMode == 0) { // ป้องกัน mode=0
-    currentMode = 1;
-    Blynk.virtualWrite(VPIN_MODE_SELECT, 1);
-    debugLog("Invalid mode=0, force to mode=1");
+  int requestedMode = param.asInt();
+
+  if (!mainSwitch) {
+    // ถ้า mainSwitch ปิด บังคับส่ง mode 0 กลับ
+    Blynk.virtualWrite(VPIN_MODE_SELECT, 0);
+    currentMode = 0;
+    setRelays(0);
+    debugLog("Main Switch ปิดอยู่ → บังคับ Mode = 0");
+    return;
   }
+
+  // อนุญาตเฉพาะ 1,2,3
+  if (requestedMode >= 1 && requestedMode <= 3) {
+    currentMode = requestedMode;
+  } else {
+    currentMode = 1; // fallback
+    Blynk.virtualWrite(VPIN_MODE_SELECT, 1);
+  }
+
   setRelays(currentMode);
+  debugLog("Mode ตั้งเป็น: " + String(currentMode));
 }
