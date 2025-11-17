@@ -374,7 +374,7 @@ void startCaptivePortal() {
   String macStr = WiFi.macAddress(); // ต้องหลัง WiFi.mode()
   String lastTwo = macStr.substring(12, 14) + macStr.substring(15, 17);
   lastTwo.toUpperCase();
-  apName = "FanSetup_" + lastTwo;
+  apName = "VBAC_FanSetup_BWR1";
 
   WiFi.softAPConfig(apIP, apIP, IPAddress(255,255,255,0));
   WiFi.softAP(apName.c_str());
